@@ -48,6 +48,7 @@ class STS3215Model:
         friction_smoothing_velocity: ``w_s`` of the explicit tanh friction [rad/s].
         model: BAM friction model, ``"m1"``, ``"m2"`` or ``"m5"``.
         generator: CPU generator for the per-episode command lag.
+        max_lag: longest command lag the history must hold [physics steps]; default: the largest ``max_delay``.
     """
 
     def __init__(
@@ -61,6 +62,7 @@ class STS3215Model:
         friction_smoothing_velocity: float = 0.1,
         model: str = "m5",
         generator: torch.Generator | None = None,
+        max_lag: int | None = None,
     ):
         if friction_mode not in ("explicit", "physx_joint"):
             raise ValueError(f"friction_mode must be 'explicit' or 'physx_joint', got {friction_mode!r}")
@@ -83,7 +85,7 @@ class STS3215Model:
         self.effort_limit = self.p["vin"] * self.p["kt"] / self.p["resistance"]
 
         shape = (self.num_envs, self.num_joints)
-        self.max_lag = int(self.p["max_delay"].max().item())
+        self.max_lag = max(int(self.p["max_delay"].max().item()), max_lag or 0)
         self._hist = torch.zeros(*shape, self.max_lag + 1, device=self.device)
         self._lag = torch.zeros(shape, dtype=torch.int64, device=self.device)
         self._q_int = torch.zeros(shape, device=self.device)

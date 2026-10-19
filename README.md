@@ -78,10 +78,33 @@ CPU only, no Isaac Sim. They cover datasheet consistency, stall torque, no-load 
 current window, overload protection, command delay, register encoding against LeRobot's reference functions,
 telemetry latency, monotone load vs force, and the drive/back-drive asymmetry.
 
+## Isaac Lab (PhysX)
+
+```python
+from so101_contact.isaaclab.actuator import STS3215Actuator, so101_sts3215_cfg
+from so101_contact.isaaclab.observations import servo_load, servo_current
+
+robot_cfg = SO101_CFG.replace(actuators=so101_sts3215_cfg("physx_joint"))   # isaaclab_so101 joint names
+...
+sim.reset()
+STS3215Actuator.bind_all(robot)   # enables the external-torque estimate (M qdd - tau) and PhysX friction writes
+```
+
+`physx_joint` writes BAM's Coulomb budget to PhysX joint friction each step (stiction, as on the real gearbox);
+`explicit` keeps all friction in the torque (smooth, no stiction, no CPU writes). On the SO-101 hold test
+(`patchbench/scripts/hold_test.py`) with LeRobot gains: gravity sag ≤ 1.8°, a 30° shoulder step settles in
+0.16–0.33 s without ringing, and Present_Load on shoulder_lift rises linearly with gripper contact force
+(≈ 90 counts/N in `physx_joint`). In `physx_joint` the elbow's load stays flat until ~2 N: a joint that is not
+moving holds small contact torques in gearbox stiction.
+
+## Real arm (LeRobot)
+
+`so101_contact.lerobot_hw.ServoTelemetryProcessorStep` reads `Present_Load` / `Present_Current` with `sync_read`
+and adds `observation.servo_load` / `observation.servo_current`, decoded exactly like the simulated bus.
+
 ## Status
 
-v0.1: core model. To come: Isaac Lab explicit actuator (`so101_contact.isaaclab`), telemetry observation terms,
-LeRobot hardware processor step, calibration protocol.
+v0.1: core model, Isaac Lab actuator and observation terms, LeRobot processor step. To come: calibration protocol.
 
 ## License
 
