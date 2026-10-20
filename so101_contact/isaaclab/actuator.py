@@ -10,8 +10,10 @@ Written against Isaac Lab ``bb0c8e1`` (IsaacLab-Arena ``aa36f19`` submodule):
   Goal_Position. We return efforts only.
 
 BAM's load-dependent friction needs the external torque on each joint. After :meth:`STS3215Actuator.bind` the
-actuator estimates it from the articulation as ``(M qdd)_j - tau_j(previous step)`` (gravity + contacts + Coriolis;
-``joint_acc`` is finite-differenced by Isaac Lab, ``mass_matrix`` from PhysX). Unbound, it uses zero.
+actuator estimates it from the articulation with :func:`~so101_contact.external_torque.estimate_external_torque`:
+``(M qdd)_j + armature_j*qdd_j - tau_j(previous step)`` (gravity + contacts + Coriolis; ``joint_acc`` is
+finite-differenced by Isaac Lab, ``mass_matrix`` from PhysX, which excludes the armature), minus the PhysX joint
+friction applied during that step (``physx_joint`` mode; otherwise it is zero). Unbound, it uses zero.
 """
 
 from __future__ import annotations
@@ -24,6 +26,7 @@ from isaaclab.actuators import ActuatorBase, ActuatorBaseCfg
 from isaaclab.utils.configclass import configclass
 from isaaclab.utils.types import ArticulationActions
 
+from ..external_torque import estimate_external_torque
 from ..params import STS3215_7V4, RandomizationRanges, STS3215Params, randomize, so101_follower, to_tensors
 from ..servo import STS3215Model
 from ..telemetry import TelemetryBus
@@ -98,7 +101,7 @@ class STS3215Actuator(ActuatorBase):
     def compute(
         self, control_action: ArticulationActions, joint_pos: torch.Tensor, joint_vel: torch.Tensor
     ) -> ArticulationActions:
-        self.external_torque = self._estimate_external_torque()
+        self.external_torque = self._estimate_external_torque(joint_vel)
         out = self.servo.step(control_action.joint_positions, joint_pos, joint_vel, self.external_torque)
         tau = out["tau"]
         self.duty, self.current = out["duty"], out["current"]
@@ -121,17 +124,24 @@ class STS3215Actuator(ActuatorBase):
     def _sample_params(self, n: int) -> dict[str, torch.Tensor]:
         return randomize(self._params, n, self._generator, self._ranges or RandomizationRanges(), self._device)
 
-    def _estimate_external_torque(self) -> torch.Tensor:
+    def _estimate_external_torque(self, joint_vel: torch.Tensor) -> torch.Tensor:
         art = self._articulation
         if art is None or self.cfg.external_torque == "none":
             return torch.zeros_like(self._last_tau)
         idx = self.joint_indices
+        d = art.data
+        gravity = -d.gravity_compensation_forces.torch[:, idx]
         if self.cfg.external_torque == "gravity":
-            return -art.data.gravity_compensation_forces.torch[:, idx]
-        m = art.data.mass_matrix.torch
-        qdd = art.data.joint_acc.torch
-        mqdd = torch.einsum("eij,ej->ei", m, qdd)
-        ext = mqdd[:, idx] - self._last_tau
+            return gravity
+        qdd = d.joint_acc.torch
+        mqdd = torch.einsum("eij,ej->ei", d.mass_matrix.torch, qdd)[:, idx]
+        # PhysX friction in effect during the last step = the coefficients last written (before this step's write)
+        ext = estimate_external_torque(
+            mqdd, qdd[:, idx], self._last_tau, d.joint_armature.torch[:, idx], qd=joint_vel, prior=gravity,
+            static_friction=d.joint_friction_coeff.torch[:, idx],
+            dynamic_friction=d.joint_dynamic_friction_coeff.torch[:, idx],
+            viscous_friction=d.joint_viscous_friction_coeff.torch[:, idx],
+        )  # fmt: skip
         a = self.cfg.external_torque_filter
         return ext if a >= 1.0 else a * ext + (1 - a) * self.external_torque
 
@@ -162,7 +172,8 @@ class STS3215ActuatorCfg(ActuatorBaseCfg):
     friction_sync_decimation: int = 1
     """``physx_joint``: write the budget to PhysX every N physics steps (each write goes through the CPU)."""
     external_torque: str = "dynamics"
-    """``dynamics`` (M qdd - tau, needs :meth:`STS3215Actuator.bind`), ``gravity`` or ``none``."""
+    """``dynamics`` (M qdd + armature qdd - tau - PhysX joint friction, needs :meth:`STS3215Actuator.bind`),
+    ``gravity`` or ``none``."""
     external_torque_filter: float = 1.0
     """EMA weight of the newest external-torque estimate (1 = no filtering)."""
     randomize: bool = False
