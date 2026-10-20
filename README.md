@@ -104,7 +104,8 @@ and adds `observation.servo_load` / `observation.servo_current`, decoded exactly
 
 ## Status
 
-v0.1: core model, Isaac Lab actuator and observation terms, LeRobot processor step. To come: calibration protocol.
+v0.1: core model, Isaac Lab actuator and observation terms, LeRobot processor step, and a hardware calibration
+protocol ([docs/CALIBRATION_PROTOCOL.md](docs/CALIBRATION_PROTOCOL.md), not yet run on a real arm).
 
 ## License
 
