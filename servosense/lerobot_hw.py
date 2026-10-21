@@ -4,7 +4,7 @@ Mirrors LeRobot's ``MotorCurrentProcessorStep`` (``lerobot/rl/joint_observations
 registers to their own keys instead of extending ``observation.state``:
 
 - ``observation.servo_load``: ``Present_Load``, signed. LeRobot's Feetech bus decodes the sign-magnitude word
-  (bit 10) in ``sync_read``, exactly as :func:`so101_contact.registers.decode_sign_magnitude` does.
+  (bit 10) in ``sync_read``, exactly as :func:`servosense.registers.decode_sign_magnitude` does.
 - ``observation.servo_current``: ``Present_Current``, unsigned 6.5 mA counts (LeRobot does not decode a sign).
 
 Both are float32 tensors of shape (1, num_motors) in the bus's motor order. lerobot is imported only by this module,

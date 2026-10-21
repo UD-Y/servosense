@@ -4,9 +4,9 @@ import pytest
 import torch
 from conftest import DT
 
-from so101_contact.external_torque import estimate_external_torque
-from so101_contact.servo import STS3215Model
-from so101_contact.sim1d import joint_step
+from servosense.external_torque import estimate_external_torque
+from servosense.servo import STS3215Model
+from servosense.sim1d import joint_step
 
 B = torch.tensor([[0.3]])  # engine static = dynamic friction [N.m]
 CV = 0.03

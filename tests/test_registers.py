@@ -2,7 +2,7 @@ import math
 
 import torch
 
-from so101_contact import registers as R
+from servosense import registers as R
 
 
 # LeRobot's scalar reference (lerobot/motors/encoding_utils.py), copied for a byte-level comparison.

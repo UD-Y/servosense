@@ -13,12 +13,12 @@ except a kitchen scale.
 | 2 | Present_Load direction bit, Present_Current scale, `resistance` | sign convention of the telemetry; current vs duty | same as 1 |
 | 3 | gearbox friction `friction_base`, `load_friction_external` | the push vs back-drive asymmetry | 2 known masses (e.g. 100 g, 200 g) |
 | 4 | Present_Load per newton at the gripper tip | the contact signal itself: the sim-to-real check | kitchen scale (0.1 N or better) |
-| 5 | sim ↔ real joint zeros | to replay sim actions on the real arm | the LeRobot calibration file |
+| 5 | sim and real joint zeros | to replay sim actions on the real arm | the LeRobot calibration file |
 
 ## Setup
 
 - LeRobot SO-101 follower, calibrated with `lerobot-calibrate` (LeRobot writes P = 16, I = 0, D = 32).
-- Read registers with `so101_contact.lerobot_hw.read_servo_telemetry(robot.bus)`. It returns Present_Load
+- Read registers with `servosense.lerobot_hw.read_servo_telemetry(robot.bus)`. It returns Present_Load
   (signed, LeRobot-decoded) and Present_Current (raw counts), decoded exactly like the simulated bus. Read
   Present_Position and Present_Voltage with `robot.bus.sync_read(name, normalize=False)`.
 - Log at 30 Hz; average 30 samples (1 s) per measurement point. The ±1 count noise then drops to about 0.2 counts.
@@ -29,7 +29,7 @@ except a kitchen scale.
 
 1. Drive the elbow (`elbow_flex`) slowly onto a padded hard stop and stop when it touches. Read `Present_Position`
    = `p0` (counts).
-2. For `k = 0, 5, 10, …, 150` counts (up to ~13°, below duty saturation): write `Goal_Position = p0 + k`, wait
+2. For `k = 0, 5, 10, ..., 150` counts (up to ~13°, below duty saturation): write `Goal_Position = p0 + k`, wait
    0.3 s, average Present_Load over 1 s, then return to `p0` for 1 s (protection timer reset).
 3. The joint does not move (ω = 0), so `duty = err · kp_fw · error_gain`, with `err = k · 2π/4096` rad.
    Fit `Present_Load = a · k + b` for the points above the dead zone:
@@ -49,7 +49,7 @@ except a kitchen scale.
 From the same stall points:
 
 - **Direction bit:** record the sign of the decoded Present_Load for a positive `k` (Goal above Present). The sim
-  assumes positive duty ↔ bit 10 clear (`registers.present_load`). If the real servo is the opposite, flip the sign
+  assumes positive duty means bit 10 is clear (`registers.present_load`). If the real servo is the opposite, flip the sign
   in `registers.present_load` and say so in the release notes.
 - **Current:** at ω = 0, `I = V · duty / R`. Fit `Present_Current · 0.0065` (A) against
   `Present_Voltage · 0.1 · Present_Load / 1000` (V): the slope is `1/R`. Default `resistance` = 2.75 Ω (BAM fit);
@@ -64,25 +64,25 @@ From the same stall points:
 2. **Lift:** ramp `Goal_Position` of `elbow_flex` upward at 5°/s through ±10° around horizontal; average Present_Load
    while moving through horizontal. The motor drives the load.
 3. **Lower:** ramp downward through the same angle at 5°/s. The load drives the motor.
-4. The model predicts motor torque `T + budget` when lifting and `T − budget` when lowering, with
+4. The model predicts motor torque `T + budget` when lifting and `T - budget` when lowering, with
    `budget ≈ friction_base + μ_e·T + μ_m·τ` (stribeck terms vanish at 5°/s). With two masses (and none), solve the
    three equations for `friction_base`, `μ_e` and the duty-to-torque scale. Defaults: `friction_base` = 0.053 N·m,
    `μ_e` = 0.24 (+0.15 near rest), `μ_m` = 0.039.
-5. Report the ratio `ΔLoad(lower) / ΔLoad(lift)` for the same mass change. The sim predicts about 0.4–0.6. This is the
+5. Report the ratio `ΔLoad(lower) / ΔLoad(lift)` for the same mass change. The sim predicts about 0.4 to 0.6. This is the
    asymmetry the benchmark's telemetry controller relies on.
 
 ## 4. Contact signal at the gripper (sim-to-real check)
 
 1. Put a kitchen scale under the gripper tip, about 1 cm below it, with the arm in the press-test pose of
-   `patchbench/scripts/hold_test.py`.
+   `latchbench/scripts/hold_test.py`.
 2. Ramp `shoulder_lift` down at 2°/s until the scale reads ~8 N, then back up. Log the scale reading (by hand or
    with a phone camera on the display, synced to the log) and Present_Load on `shoulder_lift` and `elbow_flex`.
 3. Fit Present_Load vs force on the pressing branch: counts per newton, and the noise floor at zero force. The
-   simulated SO-101 gives about 55–90 counts/N on `shoulder_lift` (results/hold_test*), and the 1-DOF push-wall
+   simulated SO-101 gives about 55 to 90 counts/N on `shoulder_lift` (results/hold_test*), and the 1-DOF push-wall
    example 84.5 counts/N at 0.2 m. The smallest detectable force is `3 counts / slope`.
 4. Compare the unloading branch: the hysteresis between pressing and releasing is the stiction band.
 
-## 5. Joint zeros (sim ↔ real)
+## 5. Joint zeros (sim and real)
 
 The sim's joint zero is the USD pose; the real arm's zero comes from `lerobot-calibrate` (homing offsets and ranges
 in `~/.cache/huggingface/lerobot/calibration/robots/so101_follower/<id>.json`). `isaaclab_so101.mapping`
@@ -94,7 +94,7 @@ any dataset meant for the real arm. Don't fake it: a dataset without the real ca
 
 ```python
 import dataclasses
-from so101_contact import STS3215_7V4, so101_follower
+from servosense import STS3215_7V4, so101_follower
 
 measured = dataclasses.replace(STS3215_7V4, error_gain=..., resistance=..., friction_base=...,
                                load_friction_external=..., min_startup_duty=..., dead_zone_counts=...)

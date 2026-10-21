@@ -5,7 +5,7 @@ import math
 import torch
 from conftest import DT, Rig
 
-from so101_contact import registers
+from servosense import registers
 
 
 def settle(rig, target, seconds):
@@ -68,8 +68,8 @@ def test_load_rises_with_contact_in_batch(ident):
     """Batched: 4 envs, walls at different stiffness, same goal -> force and load ordered the same way."""
     n = 4
     ks = torch.tensor([[20.0], [40.0], [80.0], [160.0]])
-    from so101_contact.servo import STS3215Model
-    from so101_contact.sim1d import joint_step, spring_wall_torque
+    from servosense.servo import STS3215Model
+    from servosense.sim1d import joint_step, spring_wall_torque
 
     m = STS3215Model(ident, n, DT, num_joints=1, friction_mode="physx_joint")
     q = torch.zeros(n, 1)

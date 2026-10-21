@@ -1,4 +1,4 @@
-"""Explicit Isaac Lab actuator running :class:`~so101_contact.servo.STS3215Model` on PhysX.
+"""Explicit Isaac Lab actuator running :class:`~servosense.servo.STS3215Model` on PhysX.
 
 Written against Isaac Lab ``bb0c8e1`` (IsaacLab-Arena ``aa36f19`` submodule):
 
@@ -10,7 +10,7 @@ Written against Isaac Lab ``bb0c8e1`` (IsaacLab-Arena ``aa36f19`` submodule):
   Goal_Position. We return efforts only.
 
 BAM's load-dependent friction needs the external torque on each joint. After :meth:`STS3215Actuator.bind` the
-actuator estimates it from the articulation with :func:`~so101_contact.external_torque.estimate_external_torque`:
+actuator estimates it from the articulation with :func:`~servosense.external_torque.estimate_external_torque`:
 ``(M qdd)_j + armature_j*qdd_j - tau_j(previous step)`` (gravity + contacts + Coriolis; ``joint_acc`` is
 finite-differenced by Isaac Lab, ``mass_matrix`` from PhysX, which excludes the armature), minus the PhysX joint
 friction applied during that step (``physx_joint`` mode; otherwise it is zero). Unbound, it uses zero.

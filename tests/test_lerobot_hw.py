@@ -2,9 +2,9 @@
 
 import torch
 
-from so101_contact import registers
-from so101_contact.lerobot_hw import OBS_SERVO_CURRENT, OBS_SERVO_LOAD, ServoTelemetryProcessorStep
-from so101_contact.params import LEROBOT_MOTOR_ORDER
+from servosense import registers
+from servosense.lerobot_hw import OBS_SERVO_CURRENT, OBS_SERVO_LOAD, ServoTelemetryProcessorStep
+from servosense.params import LEROBOT_MOTOR_ORDER
 
 
 class FakeFeetechBus:

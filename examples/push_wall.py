@@ -19,11 +19,11 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from so101_contact import registers
-from so101_contact.params import STS3215_7V4, STS3215_7V4_DATASHEET
-from so101_contact.servo import STS3215Model
-from so101_contact.sim1d import joint_step, spring_wall_torque
-from so101_contact.telemetry import TelemetryBus
+from servosense import registers
+from servosense.params import STS3215_7V4, STS3215_7V4_DATASHEET
+from servosense.servo import STS3215Model
+from servosense.sim1d import joint_step, spring_wall_torque
+from servosense.telemetry import TelemetryBus
 
 DT = 1 / 240
 LEVER = 0.2  # m

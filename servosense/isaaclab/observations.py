@@ -1,6 +1,6 @@
 """Isaac Lab observation terms exposing STS3215 telemetry (LeRobot-decoded register ints as float tensors).
 
-Values come from each :class:`~so101_contact.isaaclab.actuator.STS3215Actuator`'s :class:`TelemetryBus`, which
+Values come from each :class:`~servosense.isaaclab.actuator.STS3215Actuator`'s :class:`TelemetryBus`, which
 already applies the read rate, latency, quantization, noise and dropout. Joints not driven by an STS3215 group read 0.
 
     ObsTerm(func=servo_load, params={"asset_cfg": SceneEntityCfg("robot")})

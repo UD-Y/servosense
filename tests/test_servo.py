@@ -5,8 +5,8 @@ import pytest
 import torch
 from conftest import DT, Rig, no_delay
 
-from so101_contact.params import DATASHEET_7V4, STS3215_7V4, quasi_static_stall_torque
-from so101_contact.servo import STS3215Model
+from servosense.params import DATASHEET_7V4, STS3215_7V4, quasi_static_stall_torque
+from servosense.servo import STS3215Model
 
 COUNT = 2 * math.pi / 4096
 

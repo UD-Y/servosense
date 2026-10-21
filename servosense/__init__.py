@@ -1,4 +1,4 @@
-"""so101-contact: Feetech STS3215 servo telemetry (Present_Load / Present_Current) for the SO-101 arm in simulation."""
+"""servosense: Feetech STS3215 servo telemetry (Present_Load / Present_Current) for the SO-101 arm in simulation."""
 
 __version__ = "0.1.0"
 

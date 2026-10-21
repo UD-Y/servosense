@@ -4,7 +4,7 @@ Each control tick the bus samples the servo registers, quantizes them to registe
 uniform integer noise, and delivers them ``latency_steps`` control ticks later. A dropped read (probability
 ``dropout_p`` per env and tick) repeats that env's last delivered values. Values are LeRobot-decoded ints:
 signed ``Present_Load`` (0.1 % duty), unsigned ``Present_Current`` (6.5 mA), signed ``Present_Speed`` (counts/s),
-``Present_Position`` (counts, joint zero at :data:`~so101_contact.registers.POSITION_CENTER`).
+``Present_Position`` (counts, joint zero at :data:`~servosense.registers.POSITION_CENTER`).
 """
 
 from __future__ import annotations

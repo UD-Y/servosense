@@ -4,7 +4,7 @@ import math
 import pytest
 import torch
 
-from so101_contact import params as P
+from servosense import params as P
 
 
 def test_datasheet_preset_reproduces_datasheet():

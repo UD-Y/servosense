@@ -1,6 +1,6 @@
 import torch
 
-from so101_contact.telemetry import TelemetryBus
+from servosense.telemetry import TelemetryBus
 
 DT = 1 / 240  # decimation 8 at 30 Hz
 

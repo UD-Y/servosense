@@ -40,7 +40,7 @@ class STS3215Model:
 
     Args:
         params: one :class:`STS3215Params` (all joints), a sequence / mapping per joint, or a dict of
-            ``(num_envs, num_joints)`` tensors from :func:`~so101_contact.params.randomize`.
+            ``(num_envs, num_joints)`` tensors from :func:`~servosense.params.randomize`.
         num_envs: number of environments.
         dt: physics step [s]; :meth:`step` must be called once per physics step.
         num_joints: needed only when ``params`` is a single :class:`STS3215Params`.

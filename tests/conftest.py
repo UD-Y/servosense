@@ -3,9 +3,9 @@ import dataclasses
 import pytest
 import torch
 
-from so101_contact.params import STS3215_7V4, STS3215_7V4_DATASHEET
-from so101_contact.servo import STS3215Model
-from so101_contact.sim1d import joint_step, spring_wall_torque
+from servosense.params import STS3215_7V4, STS3215_7V4_DATASHEET
+from servosense.servo import STS3215Model
+from servosense.sim1d import joint_step, spring_wall_torque
 
 DT = 1 / 240
 

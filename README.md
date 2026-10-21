@@ -1,4 +1,4 @@
-# so101-contact
+# servosense
 
 A simulation model of the Feetech **STS3215** servo used in every SO-101 arm. It reproduces the servo's own
 telemetry registers, `Present_Load` (PWM duty) and `Present_Current`, as LeRobot reads them on real hardware, so a
@@ -6,16 +6,18 @@ $120 arm with no force sensor has a usable contact signal in simulation with the
 
 NVIDIA's BAM drive models how a hobby servo *moves*. This package models what it *feels*.
 
-- **Same equations and names as BAM.** Motor and gearbox friction follow Isaac Lab's BAM drive (m5); parameters use
-  `BamMotorCfg` names and `to_bam_kwargs()` drops them into BAM on Newton unchanged.
-- **Measured parameters.** The default preset is Rhoban BAM's hardware identification of a real STS3215 7.4 V,
-  with LeRobot's firmware gains (P = 16). A datasheet-only preset is derived as a cross-check
+What it does:
+
+- It uses the same equations and parameter names as BAM. Motor and gearbox friction follow Isaac Lab's BAM drive
+  (m5), parameters use the `BamMotorCfg` names, and `to_bam_kwargs()` passes them to BAM on Newton unchanged.
+- Its default parameters are measured, not guessed: Rhoban BAM's hardware identification of a real 7.4 V STS3215,
+  with LeRobot's firmware gains (P = 16). A preset derived from the datasheet alone is kept as a cross-check
   ([docs/DERIVATION.md](docs/DERIVATION.md)).
-- **Feetech firmware details BAM leaves out.** Goal_Position quantization, the internal target rate limiter, the error
-  in encoder counts with a dead zone, the current window and overload protection.
-- **Registers byte-compatible with LeRobot.** Sign-magnitude bit 10 for `Present_Load`, raw `Present_Current` in
-  6.5 mA counts, read at the control rate with latency, noise and dropout.
-- Core is pure torch, batched over `(num_envs, num_joints)`, CPU or GPU, no Isaac imports.
+- It adds the Feetech firmware details BAM leaves out: Goal_Position quantization, the internal target rate limiter,
+  the position error in encoder counts with a dead zone, the current window and overload protection.
+- Its registers match what LeRobot reads: sign-magnitude bit 10 for `Present_Load`, raw `Present_Current` in 6.5 mA
+  counts, sampled at the control rate with latency, noise and dropout.
+- The core is plain torch, batched over `(num_envs, num_joints)`, runs on CPU or GPU, and imports nothing from Isaac.
 
 ## Install
 
@@ -28,7 +30,7 @@ pip install -e ".[dev]"     # + pytest, matplotlib
 
 ```python
 import torch
-from so101_contact import SO101_FOLLOWER, STS3215Model, TelemetryBus, randomize
+from servosense import SO101_FOLLOWER, STS3215Model, TelemetryBus, randomize
 
 n, dt = 16, 1 / 240
 servo = STS3215Model(randomize(SO101_FOLLOWER, n, torch.Generator().manual_seed(0)), n, dt,
@@ -64,7 +66,7 @@ pushes into the contact.
 
 ## Derivation
 
-`python -m so101_contact.derive` prints the datasheet derivation next to the BAM fit and checks the datasheet
+`python -m servosense.derive` prints the datasheet derivation next to the BAM fit and checks the datasheet
 consistency. Summary: kt and R agree within 5 %; the datasheet stall torque (1.912 N·m) implies more gearbox loss
 than the measured unit (2.26 N·m quasi-static stall torque).
 
@@ -81,8 +83,8 @@ telemetry latency, monotone load vs force, and the drive/back-drive asymmetry.
 ## Isaac Lab (PhysX)
 
 ```python
-from so101_contact.isaaclab.actuator import STS3215Actuator, so101_sts3215_cfg
-from so101_contact.isaaclab.observations import servo_load, servo_current
+from servosense.isaaclab.actuator import STS3215Actuator, so101_sts3215_cfg
+from servosense.isaaclab.observations import servo_load, servo_current
 
 robot_cfg = SO101_CFG.replace(actuators=so101_sts3215_cfg("physx_joint"))   # isaaclab_so101 joint names
 ...
@@ -92,14 +94,14 @@ STS3215Actuator.bind_all(robot)   # enables the external-torque estimate (M qdd 
 
 `physx_joint` writes BAM's Coulomb budget to PhysX joint friction each step (stiction, as on the real gearbox);
 `explicit` keeps all friction in the torque (smooth, no stiction, no CPU writes). On the SO-101 hold test
-(`patchbench/scripts/hold_test.py`) with LeRobot gains: gravity sag ≤ 1.8°, a 30° shoulder step settles in
-0.16–0.33 s without ringing, and Present_Load on shoulder_lift rises linearly with gripper contact force
-(≈ 90 counts/N in `physx_joint`). In `physx_joint` the elbow's load stays flat until ~2 N: a joint that is not
+(`latchbench/scripts/hold_test.py`) with LeRobot gains: gravity sag of at most 1.8°, a 30° shoulder step settles in
+0.16 to 0.33 s without ringing, and Present_Load on shoulder_lift rises linearly with gripper contact force
+(about 90 counts/N in `physx_joint`). In `physx_joint` the elbow's load stays flat until about 2 N, because a joint that is not
 moving holds small contact torques in gearbox stiction.
 
 ## Real arm (LeRobot)
 
-`so101_contact.lerobot_hw.ServoTelemetryProcessorStep` reads `Present_Load` / `Present_Current` with `sync_read`
+`servosense.lerobot_hw.ServoTelemetryProcessorStep` reads `Present_Load` / `Present_Current` with `sync_read`
 and adds `observation.servo_load` / `observation.servo_current`, decoded exactly like the simulated bus.
 
 ## Status
